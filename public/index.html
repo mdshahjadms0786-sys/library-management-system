@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library Management System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ========== LOGIN / REGISTER ========== -->
+  <section id="loginView" class="center">
+    <div class="card auth-card">
+      <h1>📚 Library Management System</h1>
+      <p class="muted">DBMS Capstone Project · MongoDB + Mongoose</p>
+
+      <form id="loginForm">
+        <h3>Login</h3>
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="password" type="password" placeholder="Password" required />
+        <button>Login</button>
+        <p class="hint">Admin: admin@lib.com / admin123<br />Student: shahjad@student.com / student123</p>
+        <span class="badge">Authentication · Password hashing · Injection prevention</span>
+      </form>
+
+      <form id="registerForm" class="hidden">
+        <h3>New Student Register</h3>
+        <input name="name" placeholder="Full name" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="phone" placeholder="Phone (10 digits, optional)" />
+        <input name="password" type="password" placeholder="Password (min 6)" required />
+        <button>Register</button>
+        <span class="badge">INSERT · Constraints (unique email, 10-digit phone)</span>
+      </form>
+      <a href="#" id="toggleAuth">New student? Register here</a>
+    </div>
+  </section>
+
+  <!-- ========== MAIN APP ========== -->
+  <section id="appView" class="hidden">
+    <header>
+      <strong>📚 Library</strong>
+      <nav id="tabs"></nav>
+      <span id="userInfo"></span>
+      <button class="small ghost" id="logoutBtn">Logout</button>
+    </header>
+
+    <main>
+      <!-- DASHBOARD -->
+      <div class="tab" id="tab-dashboard">
+        <h2>Dashboard <span class="badge">COUNT / SUM aggregates</span></h2>
+        <div class="stats" id="stats"></div>
+        <p id="txnInfo" class="note"></p>
+      </div>
+
+      <!-- BOOKS -->
+      <div class="tab" id="tab-books">
+        <h2>Books <span class="badge">CRUD · Text Index search · Constraints</span></h2>
+        <div class="row">
+          <input id="searchQ" placeholder="Search title / author (uses text index)" />
+          <select id="searchCat"><option value="">All categories</option></select>
+          <button id="searchBtn">Search</button>
+        </div>
+        <form id="bookForm" class="card admin-only">
+          <h3 id="bookFormTitle">Add Book</h3>
+          <input type="hidden" name="id" />
+          <div class="row">
+            <input name="isbn" placeholder="ISBN (10-17 digits)" required />
+            <input name="title" placeholder="Title" required />
+            <input name="author" placeholder="Author" required />
+            <select name="category" id="bookCat"></select>
+            <input name="totalCopies" type="number" min="1" placeholder="Copies" required />
+            <button>Save</button>
+            <button type="button" class="ghost" id="bookCancel">Clear</button>
+          </div>
+        </form>
+        <table><thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Available</th><th class="admin-only">Action</th></tr></thead>
+          <tbody id="booksBody"></tbody></table>
+      </div>
+
+      <!-- MEMBERS -->
+      <div class="tab" id="tab-members">
+        <h2>Members <span class="badge">$lookup JOIN · RBAC · Referential integrity</span></h2>
+        <form id="memberForm" class="card">
+          <div class="row">
+            <input name="name" placeholder="Name" required />
+            <input name="email" type="email" placeholder="Email" required />
+            <input name="phone" placeholder="Phone (optional)" />
+            <input name="password" placeholder="Password (default student123)" />
+            <select name="role"><option value="student">student</option><option value="admin">admin</option></select>
+            <button>Add Member</button>
+          </div>
+        </form>
+        <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Books Holding</th><th>Action</th></tr></thead>
+          <tbody id="membersBody"></tbody></table>
+      </div>
+
+      <!-- ISSUE / RETURN -->
+      <div class="tab" id="tab-issues">
+        <h2 id="issuesHeading">Issue / Return <span class="badge">TRANSACTION (ACID) · Stored procedure · Trigger</span></h2>
+        <form id="issueForm" class="card admin-only">
+          <div class="row">
+            <select name="memberId" id="issueMember" required></select>
+            <select name="bookId" id="issueBook" required></select>
+            <button>Issue Book</button>
+          </div>
+          <p class="note">Issue = (1) availableCopies − 1 &nbsp;+&nbsp; (2) new Issue record → both together or none (Atomicity).</p>
+        </form>
+        <div class="row">
+          <select id="issueFilter"><option value="">All</option><option value="ISSUED">Issued</option><option value="RETURNED">Returned</option></select>
+        </div>
+        <table><thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Due</th><th>Status</th><th>Fine</th><th class="admin-only">Action</th></tr></thead>
+          <tbody id="issuesBody"></tbody></table>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="tab" id="tab-reports">
+        <h2>Reports <span class="badge">Aggregation · Window function · View · Cursor · Explain</span></h2>
+        <div class="row" id="reportButtons">
+          <button data-r="top-books">Top 5 Books (GROUP BY)</button>
+          <button data-r="category-rank">Rank in Category (DENSE_RANK)</button>
+          <button data-r="overdue">Overdue (VIEW)</button>
+          <button data-r="never-issued">Never Issued (EXCEPT)</button>
+          <button data-r="fines">Fines (SUM + HAVING)</button>
+          <button id="explainBtn">Query Plan (Index vs No Index)</button>
+          <button id="csvBtn" class="ghost">Export CSV (CURSOR)</button>
+        </div>
+        <p id="reportNote" class="note"></p>
+        <div id="reportOut"></div>
+      </div>
+
+      <!-- AUDIT -->
+      <div class="tab" id="tab-audit">
+        <h2>Audit Log <span class="badge">TRIGGERS (auto-written by Mongoose hooks)</span></h2>
+        <table><thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table>
+      </div>
+    </main>
+  </section>
+
+  <div id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
